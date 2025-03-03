@@ -43,10 +43,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return userRepository.findByUsername(userInfoDTO.getUsername());
     }
 
-    public Boolean signUpUser(UserInfoDTO userInfoDTO){
+    public String signUpUser(UserInfoDTO userInfoDTO){
         userInfoDTO.setPassword(passwordEncoder.encode(userInfoDTO.getPassword()));
         if(Objects.nonNull(checkIfUserAlreadyExists(userInfoDTO))){
-            return false;
+            return null;
         }
         String userId = UUID.randomUUID().toString();
         UserInfo userInfo = UserInfo.builder()
@@ -57,7 +57,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .build();
         userRepository.save(userInfo);
         userInfoProducer.sendEventToKafka(buildUserInfoEvent(userInfoDTO,userId));
-        return true;
+        return userId;
     }
 
     public String getUserByUserName(String userName){

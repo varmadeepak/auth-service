@@ -36,8 +36,8 @@ public class AuthController {
     @PostMapping("/auth/v1/signup")
     public ResponseEntity<?> signup(@RequestBody UserInfoDTO userInfoDTO){
         try{
-            Boolean isExistingUser = userDetailsService.signUpUser(userInfoDTO);
-            if(Boolean.FALSE.equals(isExistingUser)) {
+            String userId = userDetailsService.signUpUser(userInfoDTO);
+            if(Objects.isNull(userId)) {
                 return new ResponseEntity<>("User Already Exists", HttpStatus.BAD_REQUEST);
             }
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userInfoDTO.getUsername());
@@ -46,6 +46,7 @@ public class AuthController {
             JwtResponseDTO jwtResponseDTO = JwtResponseDTO.builder()
                     .accessToken(jwtToken)
                     .token(refreshToken.getToken())
+                    .userId(userId)
                     .build();
             return new ResponseEntity<>(jwtResponseDTO,HttpStatus.OK);
         }
@@ -57,12 +58,21 @@ public class AuthController {
     @GetMapping("/auth/v1/ping")
     public ResponseEntity<String> ping(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Auth : " + authentication);
-        System.out.println("Auth : " + authentication.getName());
+        System.out.println("Token : " + authentication);
+        System.out.println("userName : " + authentication.getName());
         if(authentication != null && authentication.isAuthenticated()){
-
-            return new ResponseEntity<>("PONG",HttpStatus.OK);
+            String userId = userDetailsService.getUserByUserName(authentication.getName());
+            System.out.println("UserID : " + userId);
+            if(Objects.nonNull(userId)){
+                return ResponseEntity.ok(userId);
+            }
         }
         return new ResponseEntity<>("UNAUTHORIZED", HttpStatus.UNAUTHORIZED);
+    }
+
+    @GetMapping("/hello")
+    public ResponseEntity<String> printHello(){
+        System.out.println("Hello");
+        return new ResponseEntity<>("Hello",HttpStatus.OK);
     }
 }
